@@ -1,33 +1,11 @@
-#!/usr/bin/python3.7
-
-# python 3.7 needed for subprocess arguments
-# added shebang as updating to python 3.6 breaks some install programs on dev environment
-
 import os
-
 from time import sleep
-from sys import stderr
 import shutil
 import threading
-<<<<<<< HEAD
-from encode_file import poll_docker
-from new_file import poll_new
-from nodes import initialise_nodes
-=======
-import hashlib
+import subprocess
 import stat
->>>>>>> 7c60e7257a7b25df0aca1d09291c94a6447f7ae9
-
-NEW_DIRECTORY = "new"
-PROCESS_DIRECTORY = "processing"
-NFS_ROOT = "/mnt/nfs-client"
-<<<<<<< HEAD
-
-
-=======
-# poll interval in seconds
-POLL_NEW_INTERVAL = 5
-POLL_DOCKER_INTERVAL = 2
+from sys import stderr
+from global_var import NEW_DIRECTORY, PROCESS_DIRECTORY, NFS_ROOT, POLL_NEW_INTERVAL
 
 def check_file_size(filename):
     full_path = os.path.join(NEW_DIRECTORY, filename)
@@ -95,61 +73,3 @@ def split_file(filename):
             pass
     else:
         print(f"Unexpected file '{filename}' was not located in processing directory '{PROCESS_DIRECTORY}'", file=stderr)
-
-
-# Check whether any segments to encode
-def poll_docker():
-    for dirname in os.listdir(NFS_ROOT):
-        if dirname[:1] == ".":
-            continue
-        full_path = os.path.join(NFS_ROOT, dirname)
-        if os.path.isdir(full_path):
-            print(full_path)
-            for filename in os.listdir(full_path):
-                if filename[-4:] == ".log":
-                    continue
-                elif filename[:9] != "processed" and not os.path.isfile(os.path.join(full_path, f"processed-{filename}")):
-                    print(f"[DOCKER] Setting up docker (one-shot) service to process {filename}")
-                    print(filename[:9])
-                    split_command = f"docker service create \
-                        --restart-condition on-failure \
-                        --name ffmpeg-{hashlib.md5(filename.encode('utf-8')).hexdigest()} \
-                        --mount type=bind,source={full_path},target=/temp \
-                        jrottenberg/ffmpeg:4.1-alpine \
-                        -i /temp/{filename} \
-                        -c:v libx265 -crf 20 -preset veryslow\
-                        /temp/processed-{filename}"
-                    # capture_output=True, encoding="utf-8"
-                    subprocess.run(split_command.split())
-                    sleep(1)
-
-
-    sleep(POLL_DOCKER_INTERVAL)
-
-
-# Wake any inactive processing nodes
-def wol_nodes():
-    pass
-
-
->>>>>>> 7c60e7257a7b25df0aca1d09291c94a6447f7ae9
-def check_folders():
-    # Create folders if it doesn't exist
-    if not os.path.isdir(NEW_DIRECTORY):
-        os.mkdir(NEW_DIRECTORY)
-    if not os.path.isdir(PROCESS_DIRECTORY):
-        os.mkdir(PROCESS_DIRECTORY)
-    if not os.path.isdir(NFS_ROOT):
-        print("Could not find NFS directory.", file=stderr)
-        exit(1)
-
-
-if __name__ == "__main__":
-    check_folders()
-    initialise_nodes()
-    while True:
-        poll_new()
-        poll_docker()
-        
-
-
