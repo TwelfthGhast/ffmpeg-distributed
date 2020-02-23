@@ -15,7 +15,7 @@ from nodes import initialise_nodes
 from global_var import NFS_ROOT, PROCESS_DIRECTORY, NEW_DIRECTORY
 from encode_file import poll_docker
 from new_file import poll_new
-from nodes import initialise_nodes
+from nodes import initialise_nodes, poll_node_status
 
 def check_folders():
     # Create folders if it doesn't exist
@@ -31,9 +31,13 @@ def check_folders():
 if __name__ == "__main__":
     check_folders()
     initialise_nodes()
-    while True:
-        poll_new()
-        poll_docker()
+
+    thread_new = threading.Thread(target=poll_new)
+    thread_new.start()
+    thread_docker = threading.Thread(target=poll_docker)
+    thread_docker.start()
+    thread_node_stat = threading.Thread(target=poll_node_status)
+    thread_node_stat.start()
         
 
 
